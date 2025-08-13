@@ -10,7 +10,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,13 +18,13 @@ import java.util.stream.Collectors;
 
 public final class PlayerBoundsManager implements Listener {
 
-  private final JavaPlugin plugin;
+  private final Main plugin;
 
   private final Map<UUID, Map<Location, BlockData>> originalBlockData = new HashMap<>();
 
   private final Map<UUID, Location> playerLocationData = new HashMap<>();
 
-  private final BlockData bordersMaterial = Material.BEDROCK.createBlockData();
+  private final BlockData bordersMaterial = Material.BLACK_CONCRETE.createBlockData();
 
   public PlayerBoundsManager(Main plugin) {
     this.plugin = plugin;
@@ -33,7 +32,7 @@ public final class PlayerBoundsManager implements Listener {
 
   public Map<Location, BlockData> getBorderBlocks(Player player) {
 
-    int bordersRadius = 128;
+    int bordersRadius = ((plugin.getPlayerViewDistance(player) - 1) * 16);
     return Shape.drawWorldCylinder(player.getLocation(), bordersRadius, bordersMaterial);
 
   }
@@ -120,13 +119,11 @@ public final class PlayerBoundsManager implements Listener {
 
     var oldPlayerPosition = playerLocationData.get(player.getUniqueId());
 
-    if(oldPlayerPosition.distance(playerLocation) > 20)
+    if (oldPlayerPosition.distance(playerLocation) > 16) {
       playerLocationData.put(player.getUniqueId(), playerLocation);
-    else return;
-
-    this.onUpdate(player);
+      this.onUpdate(player);
+    }
 
   }
-
 
 }

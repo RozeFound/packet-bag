@@ -5,10 +5,13 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.world.chunk.LightData;
+import com.github.retrooper.packetevents.wrapper.configuration.client.WrapperConfigClientSettings;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientSettings;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockChange;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChunkData;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerMultiBlockChange;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUpdateLight;
+import io.github.rozefound.packetbag.Main;
 import io.github.rozefound.packetbag.utils.Chunk;
 import io.github.rozefound.packetbag.utils.LightPacket;
 import org.bukkit.Location;
@@ -20,6 +23,14 @@ import java.util.Arrays;
 import java.util.List;
 
 public class PacketEventListener  implements PacketListener {
+
+  private final Main plugin;
+
+  public PacketEventListener(Main plugin) {
+
+    this.plugin = plugin;
+
+  }
 
   @Override
   public void onPacketSend(@NotNull PacketSendEvent event) {
@@ -36,7 +47,26 @@ public class PacketEventListener  implements PacketListener {
   @Override
   public void onPacketReceive(@NotNull PacketReceiveEvent event) {
 
+    switch (event.getPacketType()) {
+      case PacketType.Configuration.Client.CLIENT_SETTINGS, PacketType.Play.Client.CLIENT_SETTINGS -> onClientInfoEvent(event);
+      default -> {}
+    }
 
+  }
+
+  public void onClientInfoEvent(@NotNull PacketReceiveEvent event) {
+
+    var player = (Player) event.getPlayer();
+    int viewDistance = 0;
+
+    if (event.getPacketType() == PacketType.Configuration.Client.CLIENT_SETTINGS)
+      viewDistance = new WrapperConfigClientSettings(event).getViewDistance();
+    if (event.getPacketType() == PacketType.Play.Client.CLIENT_SETTINGS)
+      viewDistance = new WrapperPlayClientSettings(event).getViewDistance();
+
+    plugin.setPlayerViewDistance(player, viewDistance);
+
+    plugin.getLogger().info("Player %s set their view distance to %d".formatted(player.getName(), viewDistance));
 
   }
 

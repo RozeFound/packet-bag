@@ -108,7 +108,7 @@ public final class Shape {
     int centerZ = center.getBlockZ();
 
     int minY = world.getMinHeight();
-    int maxY = world.getMaxHeight() - 1;
+    int maxY = center.getBlockY() + 100;
 
     for (int x = -radius; x <= radius; x++) {
       for (int z = -radius; z <= radius; z++) {
