@@ -97,6 +97,7 @@ public class PacketEventListener  implements PacketListener {
     var packet = new WrapperPlayServerBlockChange(event);
 
     var player = (Player)event.getPlayer();
+    if (player == null) return;
 
     var blockPosition = packet.getBlockPosition();
     var location = new Location(player.getWorld(), blockPosition.getX(), blockPosition.getY(), blockPosition.getZ());
@@ -109,6 +110,7 @@ public class PacketEventListener  implements PacketListener {
     var packet = new WrapperPlayServerMultiBlockChange(event);
 
     var player = (Player)event.getPlayer();
+    if (player == null) return;
 
     List<Location> locations = new ArrayList<>();
 

@@ -1,15 +1,16 @@
 package io.github.rozefound.packetbag;
 
 import io.github.rozefound.packetbag.utils.FakeBlock;
-import io.github.rozefound.packetbag.utils.Shape;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.joml.Vector3i;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +23,7 @@ public final class PlayerBoundsManager implements Listener {
 
   private final Map<UUID, Map<Location, BlockData>> originalBlockData = new HashMap<>();
 
-  private final Map<UUID, Location> playerLocationData = new HashMap<>();
+  private final Map<UUID, Vector3i> playerLastSector = new HashMap<>();
 
   private final BlockData bordersMaterial = Material.BLACK_CONCRETE.createBlockData();
 
@@ -32,8 +33,45 @@ public final class PlayerBoundsManager implements Listener {
 
   public Map<Location, BlockData> getBorderBlocks(Player player) {
 
-    int bordersRadius = ((plugin.getPlayerViewDistance(player) - 1) * 16);
-    return Shape.drawWorldCylinder(player.getLocation(), bordersRadius, bordersMaterial);
+    var viewDistance = plugin.getPlayerViewDistance(player);
+    int bordersRadius = ((viewDistance - 1) * 16);
+    int verticalDistance  = (int) ((viewDistance * 16) * 0.75);
+
+    Map<Location, BlockData> blocks = new HashMap<>();
+
+    var center = player.getLocation();
+    World world = center.getWorld();
+
+    int radiusSquared = bordersRadius * bordersRadius;
+
+    int centerX = center.getBlockX();
+    int centerZ = center.getBlockZ();
+
+    int minY = world.getMinHeight();
+    int maxY = Math.min(center.getBlockY() + verticalDistance, world.getMaxHeight() - 1);
+
+    for (int x = -bordersRadius; x <= bordersRadius; x++) {
+      for (int z = -bordersRadius; z <= bordersRadius; z++) {
+
+        int distanceSquaredXZ = (x * x) + (z * z);
+
+        if (distanceSquaredXZ <= radiusSquared) {
+          Location topCapLoc = new Location(world, centerX + x, maxY, centerZ + z);
+          blocks.put(topCapLoc, bordersMaterial);
+        }
+
+        if (distanceSquaredXZ > (bordersRadius - 1) * (bordersRadius - 1) && distanceSquaredXZ <= radiusSquared) {
+          for (int y = minY + 1; y < maxY; y++) {
+            Location wallLoc = new Location(world, centerX + x, y, centerZ + z);
+
+            if (!world.getBlockAt(wallLoc).getBlockData().isOccluding() || !world.getBlockAt(wallLoc).isSolid())
+              blocks.put(wallLoc, bordersMaterial);
+          }
+        }
+      }
+    }
+
+    return blocks;
 
   }
 
@@ -67,7 +105,7 @@ public final class PlayerBoundsManager implements Listener {
       sendFakeBlocks(player, originalBlocks);
 
     originalBlockData.remove(player.getUniqueId());
-    playerLocationData.remove(player.getUniqueId());
+    playerLastSector.remove(player.getUniqueId());
 
   }
 
@@ -94,11 +132,11 @@ public final class PlayerBoundsManager implements Listener {
 
     originalBlockData.put(player.getUniqueId(), originalBlocks);
 
-    if (!diffRemove.isEmpty())
-      sendFakeBlocks(player, diffRemove);
-
     if (!diffAdd.isEmpty())
       sendFakeBlocks(player, diffAdd);
+
+    if (!diffRemove.isEmpty())
+      sendFakeBlocks(player, diffRemove);
 
   }
 
@@ -110,17 +148,13 @@ public final class PlayerBoundsManager implements Listener {
   public void onPLayerMove(PlayerMoveEvent event) {
 
     var player = event.getPlayer();
-    var playerLocation = player.getLocation().clone();
+    var currentSector = new Vector3i(player.getChunk().getX(), player.getLocation().getBlockY() >> 4, player.getChunk().getZ());
 
-    playerLocation.setY(0);
+    if (!playerLastSector.containsKey(player.getUniqueId()))
+      playerLastSector.put(player.getUniqueId(), currentSector);
 
-    if (!playerLocationData.containsKey(player.getUniqueId()))
-      playerLocationData.put(player.getUniqueId(), playerLocation);
-
-    var oldPlayerPosition = playerLocationData.get(player.getUniqueId());
-
-    if (oldPlayerPosition.distance(playerLocation) > 16) {
-      playerLocationData.put(player.getUniqueId(), playerLocation);
+    if (!playerLastSector.get(player.getUniqueId()).equals(currentSector)) {
+      playerLastSector.put(player.getUniqueId(), currentSector);
       this.onUpdate(player);
     }
 

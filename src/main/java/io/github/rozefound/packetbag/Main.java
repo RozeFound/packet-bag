@@ -71,6 +71,7 @@ public final class Main extends JavaPlugin implements Listener {
         for (var player : getServer().getOnlinePlayers()) {
 
           var chunks = playerChunkLoadListener.getPlayerLoadedChunks(player);
+          if (chunks == null) return;
 
           Map<Vector2i, Set<Integer>> chunkSectorsMap = new HashMap<>();
 
