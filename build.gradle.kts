@@ -31,7 +31,7 @@ repositories {
 
 dependencies {
 
-  paperweight.paperDevBundle("1.21.8-R0.1-SNAPSHOT")
+  paperweight.paperDevBundle("1.21.5-R0.1-SNAPSHOT")
   compileOnly("com.github.retrooper:packetevents-spigot:2.9.3")
 }
 
@@ -59,6 +59,6 @@ bukkitPluginYaml {
   main = "io.github.rozefound.packetbag.Main"
   load = BukkitPluginYaml.PluginLoadOrder.STARTUP
   authors.add("Author")
-  apiVersion = "1.21.8"
+  apiVersion = "1.21.5"
   depend.add("packetevents")
 }

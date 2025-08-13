@@ -1,0 +1,6 @@
+bordersRadius: 128
+lightUpdateIntervalTicks: 20
+verboseLogging: true
+boundsProcessIntervalTicks: 10
+boundsUpdateDebounceTicks: 20
+bordersHeightHalf: 3
